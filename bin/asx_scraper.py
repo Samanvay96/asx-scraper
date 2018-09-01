@@ -18,7 +18,7 @@ class AsxScraper:
     def insert_prices(self):
         worksheet = self.sheet.add_worksheet(title=f'{datetime.today().strftime("%Y-%m-%d")}', rows='2', cols=f'{len(self.stock_codes)}')
         for i, (stock_code, stock_price) in enumerate(self.stock_prices(self.stock_codes).items()):
-            self.update_sheet(worksheet, i, stock_code, stock_price)
+            self.update_sheet(worksheet, i, [stock_code, stock_price])
 
     def stock_prices(self, stock_codes):
         stock_prices = {}
@@ -26,9 +26,12 @@ class AsxScraper:
             stock_prices[stock_code] = price(url(self.BASE_URL, stock_code))
         return SortedDict(stock_prices)
 
-    def update_sheet(self, worksheet, i, stock_code, stock_price):
-        update_cell(worksheet, f'{string.ascii_uppercase[i]}1', f'{stock_code}')
-        update_cell(worksheet, f'{string.ascii_uppercase[i]}2', f'{stock_price}')
+    def update_sheet(self, worksheet, i, contents):
+        for j, content in enumerate(contents):
+            update_cell(worksheet, cell(string.ascii_uppercase[i], j), content)
+
+def cell(letter, number):
+    return f'{letter}{number}'
 
 def update_cell(worksheet, cell, info):
     worksheet.update_acell(cell, info)
