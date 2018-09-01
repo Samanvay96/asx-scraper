@@ -1,11 +1,13 @@
 import urllib.request
 from datetime import datetime
 import string
+from argparse import ArgumentParser
 
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from bs4 import BeautifulSoup
 from sortedcontainers import SortedDict
+
 
 class AsxScraper:
 
@@ -48,3 +50,11 @@ def price(url):
 
 def url(base_url, stock_code):
     return f'{base_url}{stock_code.upper()}'
+
+if __name__ == '__main__':
+    parser = ArgumentParser(description='Takes ASX stock codes, scrapes prices from website and inserts into a given google sheet')
+    parser.add_argument('-c', '--client-secret',   action='store', help='the client',                                 type=str, dest='client_secret',               required=True)
+    parser.add_argument('-g', '--google-sheet',    action='store', help='the google sheet to insert prices into',     type=str, dest='google_sheet',                required=True)
+    parser.add_argument('-s', '--stock-codes',     action='store', help='the stock codes to get price for',           type=str, dest='stock_codes',      nargs='+', required=True)
+    args = parser.parse_args().__dict__
+    AsxScraper(**args).insert_prices()
