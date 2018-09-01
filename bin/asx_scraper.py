@@ -1,9 +1,11 @@
 import urllib.request
 from datetime import datetime
+import string
 
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from bs4 import BeautifulSoup
+from sortedcontainers import SortedDict
 
 class AsxScraper:
 
@@ -15,18 +17,21 @@ class AsxScraper:
 
     def insert_prices(self):
         worksheet = self.sheet.add_worksheet(title=f'{datetime.today().strftime("%Y-%m-%d")}', rows='2', cols=f'{len(self.stock_codes)}')
-        for stock_code, stock_price in stock_prices(self.stock_codes).items():
-            update_sheet(worksheet, stock_code, stock_price)
+        for i, (stock_code, stock_price) in enumerate(self.stock_prices(self.stock_codes).items()):
+            self.update_sheet(worksheet, i, stock_code, stock_price)
 
     def stock_prices(self, stock_codes):
         stock_prices = {}
         for stock_code in self.stock_codes:
             stock_prices[stock_code] = price(url(self.BASE_URL, stock_code))
-        return stock_prices
+        return SortedDict(stock_prices)
 
-    def update_sheet(self, worksheet, stock_code, stock_price):
-        worksheet.update_acell('A1', f'{stock_code}')
-        worksheet.update_acell('A2', f'{stock_price}')
+    def update_sheet(self, worksheet, i, stock_code, stock_price):
+        update_cell(worksheet, f'{string.ascii_uppercase[i]}1', f'{stock_code}')
+        update_cell(worksheet, f'{string.ascii_uppercase[i]}2', f'{stock_price}')
+
+def update_cell(worksheet, cell, info):
+    worksheet.update_acell(cell, info)
 
 def client(client_secret):
     scope = ['https://spreadsheets.google.com/feeds']
