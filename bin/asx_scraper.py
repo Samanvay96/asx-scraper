@@ -13,16 +13,17 @@ class AsxScraper:
 
     BASE_URL = 'https://www.asx.com.au/asx/markets/equityPrices.do?by=asxCodes&asxCodes='
 
-    def __init__(self, stock_codes, google_sheet, client_secret):
+    def __init__(self, stock_codes, google_sheet, client_secret, test):
         self.stock_codes = stock_codes
-        self.sheet = client(client_secret).open(google_sheet)
+        if not test:
+            self.sheet = client(client_secret).open(google_sheet)
 
     def insert_prices(self):
         worksheet = self.sheet.add_worksheet(title=f'{datetime.today().strftime("%Y-%m-%d")}', rows='2', cols=f'{len(self.stock_codes)}')
-        for i, (stock_code, stock_price) in enumerate(self.stock_prices(self.stock_codes).items()):
+        for i, (stock_code, stock_price) in enumerate(self.stock_prices().items()):
             self.update_sheet(worksheet, i, [stock_code, stock_price])
 
-    def stock_prices(self, stock_codes):
+    def stock_prices(self):
         stock_prices = {}
         for stock_code in self.stock_codes:
             stock_prices[stock_code] = price(url(self.BASE_URL, stock_code))
@@ -53,8 +54,9 @@ def url(base_url, stock_code):
 
 if __name__ == '__main__':
     parser = ArgumentParser(description='Takes ASX stock codes, scrapes prices from website and inserts into a given google sheet')
-    parser.add_argument('-c', '--client-secret',   action='store', help='the client',                                 type=str, dest='client_secret',               required=True)
-    parser.add_argument('-g', '--google-sheet',    action='store', help='the google sheet to insert prices into',     type=str, dest='google_sheet',                required=True)
-    parser.add_argument('-s', '--stock-codes',     action='store', help='the stock codes to get price for',           type=str, dest='stock_codes',      nargs='+', required=True)
+    parser.add_argument('-c', '--client-secret',   action='store',      help='the client',                                 type=str, dest='client_secret',               required=True)
+    parser.add_argument('-g', '--google-sheet',    action='store',      help='the google sheet to insert prices into',     type=str, dest='google_sheet',                required=True)
+    parser.add_argument('-s', '--stock-codes',     action='store',      help='the stock codes to get price for',           type=str, dest='stock_codes',      nargs='+', required=True)
+    parser.add_argument('-t', '--test',            action='store_true', help='Perform test',                                         dest='test'                                      )
     args = parser.parse_args().__dict__
     AsxScraper(**args).insert_prices()
