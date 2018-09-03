@@ -9,12 +9,11 @@ from bs4 import BeautifulSoup
 from sortedcontainers import SortedDict
 
 
-class AsxScraper:
+class StockPriceScraper:
 
-    BASE_URL = 'https://www.asx.com.au/asx/markets/equityPrices.do?by=asxCodes&asxCodes='
-
-    def __init__(self, stock_codes, google_sheet, client_secret, test):
+    def __init__(self, base_url, stock_codes, google_sheet, client_secret, test):
         self.stock_codes = stock_codes
+        self.base_url = base_url
         if not test:
             self.sheet = client(client_secret).open(google_sheet)
 
@@ -26,7 +25,7 @@ class AsxScraper:
     def stock_prices(self):
         stock_prices = {}
         for stock_code in self.stock_codes:
-            stock_prices[stock_code] = price(url(self.BASE_URL, stock_code))
+            stock_prices[stock_code] = price(url(self.base_url, stock_code))
         return SortedDict(stock_prices)
 
     def update_sheet(self, worksheet, i, contents):
@@ -47,16 +46,17 @@ def client(client_secret):
 def price(url):
     page = urllib.request.urlopen(url)
     soup = BeautifulSoup(page, 'html.parser')
-    return soup.find('td', attrs={'class':'last'}).text.strip()
+    return soup.find('h2', attrs={'class':'page-content entry-content'}).text.strip()
 
 def url(base_url, stock_code):
     return f'{base_url}{stock_code.upper()}'
 
 if __name__ == '__main__':
-    parser = ArgumentParser(description='Takes ASX stock codes, scrapes prices from website and inserts into a given google sheet')
+    parser = ArgumentParser(description='Takes stock codes, scrapes prices from website and inserts into a given google sheet')
+    parser.add_argument('-c', '--client-secret',   action='store',      help='the client',                                 type=str, dest='base_url',               required=True)
     parser.add_argument('-c', '--client-secret',   action='store',      help='the client',                                 type=str, dest='client_secret',               required=True)
     parser.add_argument('-g', '--google-sheet',    action='store',      help='the google sheet to insert prices into',     type=str, dest='google_sheet',                required=True)
     parser.add_argument('-s', '--stock-codes',     action='store',      help='the stock codes to get price for',           type=str, dest='stock_codes',      nargs='+', required=True)
     parser.add_argument('-t', '--test',            action='store_true', help='Perform test',                                         dest='test'                                      )
     args = parser.parse_args().__dict__
-    AsxScraper(**args).insert_prices()
+    StockPriceScraper(**args).insert_prices()
