@@ -30,7 +30,7 @@ class StockPriceScraper:
 
     def update_sheet(self, worksheet, i, contents):
         for j, content in enumerate(contents):
-            update_cell(worksheet, cell(string.ascii_uppercase[i], j), content)
+            update_cell(worksheet, cell(string.ascii_uppercase[i], j+1), content)
 
 def cell(letter, number):
     return f'{letter}{number}'
@@ -39,14 +39,21 @@ def update_cell(worksheet, cell, info):
     worksheet.update_acell(cell, info)
 
 def client(client_secret):
-    scope = ['https://spreadsheets.google.com/feeds']
+    scope = ['https://spreadsheets.google.com/feeds',
+             'https://www.googleapis.com/auth/drive']
     creds = ServiceAccountCredentials.from_json_keyfile_name(client_secret, scope)
     return gspread.authorize(creds)
 
 def price(url):
+    soup = make_soup(url)
+    return scrape_price(soup)
+
+def make_soup(url):
     page = urllib.request.urlopen(url)
-    soup = BeautifulSoup(page, 'html.parser')
-    return soup.find('h2', attrs={'class':'page-content entry-content'}).text.strip()
+    return BeautifulSoup(page, 'html.parser')
+
+def scrape_price(soup):
+    return soup.find('div', attrs={'class':'page-content entry-content'}).find('h2').text.strip()
 
 def url(base_url, stock_code):
     return f'{base_url}{stock_code.upper()}'
